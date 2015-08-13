@@ -1,0 +1,1 @@
+File to ensure resource folder is saved to git

@@ -2,10 +2,10 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>keithj</groupId>
-	<artifactId>uk.co.cdl.keithj.postcodes3</artifactId>
+	<artifactId>uk.co.keithj.postcodes3</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>uk.co.cdl.keithj.postcodes3</name>
-	<description>uk.co.cdl.keithj.postcodes3</description>
+	<name>uk.co.keithj.postcodes3</name>
+	<description>uk.co.keithj.postcodes3</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>

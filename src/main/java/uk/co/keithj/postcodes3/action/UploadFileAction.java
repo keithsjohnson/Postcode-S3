@@ -1,11 +1,11 @@
-package uk.co.cdl.keithj.postcodes3.action;
+package uk.co.keithj.postcodes3.action;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import uk.co.cdl.keithj.postcodes3.api.StoreProvider;
+import uk.co.keithj.postcodes3.api.StoreProvider;
 
 @RestController
 public class UploadFileAction {

@@ -1,4 +1,4 @@
-package uk.co.cdl.keithj.postcodes3.infrastructure;
+package uk.co.keithj.postcodes3.infrastructure;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -15,7 +15,7 @@ import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.amazonaws.util.IOUtils;
 
-import uk.co.cdl.keithj.postcodes3.api.StoreProvider;
+import uk.co.keithj.postcodes3.api.StoreProvider;
 
 @Component
 public class S3ProviderImpl implements StoreProvider {

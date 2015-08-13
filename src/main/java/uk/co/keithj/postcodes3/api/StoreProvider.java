@@ -1,4 +1,4 @@
-package uk.co.cdl.keithj.postcodes3.api;
+package uk.co.keithj.postcodes3.api;
 
 import org.springframework.core.io.Resource;
 

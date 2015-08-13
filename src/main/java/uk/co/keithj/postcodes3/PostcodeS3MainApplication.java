@@ -1,4 +1,4 @@
-package uk.co.cdl.keithj.postcodes3;
+package uk.co.keithj.postcodes3;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;

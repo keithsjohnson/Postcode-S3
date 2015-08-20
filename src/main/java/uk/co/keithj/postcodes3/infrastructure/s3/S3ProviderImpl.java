@@ -1,16 +1,21 @@
-package uk.co.keithj.postcodes3.infrastructure;
+package uk.co.keithj.postcodes3.infrastructure.s3;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.amazonaws.util.IOUtils;
@@ -21,15 +26,49 @@ import uk.co.keithj.postcodes3.api.StoreProvider;
 public class S3ProviderImpl implements StoreProvider {
 
 	@Autowired
-	private ResourceLoader s3ResourceLoader;
-
-	@Autowired
 	private TransferManager s3TransferManager;
 
+	@Autowired
+	private AmazonS3 amazonS3;
+
 	@Override
-	public Resource retrieve(String url) {
-		System.out.println("S3 RETREIVE: " + url);
-		return this.s3ResourceLoader.getResource(url);
+	public void retrieve(String message) {
+		System.out.println("S3 RETREIVE: " + message);
+
+		S3Object s3object = amazonS3.getObject(new GetObjectRequest("postcodelocationfinderfiles", "postcodes.csv"));
+
+		System.out.println("Content-Type: " + s3object.getObjectMetadata().getContentType());
+		displayTextInputStream(s3object.getObjectContent());
+
+		// Get a range of bytes from an object.
+
+		GetObjectRequest rangeObjectRequest = new GetObjectRequest("postcodelocationfinderfiles", "postcodes.csv");
+		rangeObjectRequest.setRange(0, 18);
+		S3Object objectPortion = amazonS3.getObject(rangeObjectRequest);
+
+		System.out.println("Printing bytes retrieved.");
+		displayTextInputStream(objectPortion.getObjectContent());
+
+		amazonS3.deleteObject("postcodelocationfinderfiles", "postcodes.csv");
+	}
+
+	private static void displayTextInputStream(InputStream input) {
+		// Read one text line at a time and display.
+		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+		while (true) {
+
+			String line;
+			try {
+				line = reader.readLine();
+			} catch (IOException e) {
+				throw new RuntimeException("displayTextInputStream", e);
+			}
+			if (line == null)
+				break;
+
+			System.out.println("    " + line);
+		}
+		System.out.println();
 	}
 
 	@Override
@@ -50,7 +89,8 @@ public class S3ProviderImpl implements StoreProvider {
 
 		PutObjectRequest putObjectRequest = null;
 		try {
-			putObjectRequest = new PutObjectRequest("postcodebucket", key, new FileInputStream(filename), metadata);
+			putObjectRequest = new PutObjectRequest("postcodelocationfinderfiles", key, new FileInputStream(filename),
+					metadata);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("File not found: " + filename, e);
 		}

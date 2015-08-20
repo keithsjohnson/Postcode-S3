@@ -18,7 +18,7 @@ Postcode S3 URLs
 Upload file to S3:
 http://localhost:8080/health
 
-http://localhost:8080/upload?key=postcodes.csv&filename=E:/dev/git/uk.co.keithj.postcodes3/testData/postcodes.csv
+http://localhost:8080/upload?key=postcodes.csv&filename=E:/dev/git/Postcode-S3/testData/postcodes.csv
 
 Example URLs after deployment to AWS
 ------------------------------------

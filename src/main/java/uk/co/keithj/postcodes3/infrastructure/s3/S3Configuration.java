@@ -1,4 +1,4 @@
-package uk.co.keithj.postcodes3.infrastructure;
+package uk.co.keithj.postcodes3.infrastructure.s3;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.aws.core.io.s3.SimpleStorageResourceLoader;

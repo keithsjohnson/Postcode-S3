@@ -1,16 +1,9 @@
 package uk.co.keithj.postcodes3.infrastructure.s3;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,8 +26,6 @@ public class S3ProviderImpl implements StoreProvider {
 		System.out.println("S3 RETRIEVE: " + message);
 
 		S3FileInfo s3FileInfo = getS3FileInfoFromMessage(message);
-
-		getWholeFileFromS3(s3FileInfo);
 
 		s3FileChunkProcessorImpl.getFileFromS3InChunks(s3FileInfo);
 
@@ -65,37 +56,6 @@ public class S3ProviderImpl implements StoreProvider {
 			}
 		}
 		return s3FileInfo;
-	}
-
-	private void getWholeFileFromS3(S3FileInfo s3FileInfo) {
-		S3Object s3object = amazonS3
-				.getObject(new GetObjectRequest(s3FileInfo.getBucketName(), s3FileInfo.getObjectKey()));
-
-		System.out.println("Content-Type: " + s3object.getObjectMetadata().getContentType());
-
-		long instanceLength = s3object.getObjectMetadata().getInstanceLength();
-		System.out.println("InstanceLength: " + instanceLength);
-		displayTextInputStream(s3object.getObjectContent());
-		return;
-	}
-
-	private static void displayTextInputStream(InputStream input) {
-		// Read one text line at a time and display.
-		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-		while (true) {
-
-			String line;
-			try {
-				line = reader.readLine();
-			} catch (IOException e) {
-				throw new RuntimeException("displayTextInputStream", e);
-			}
-			if (line == null)
-				break;
-
-			System.out.println("    '" + line + "'");
-		}
-		System.out.println();
 	}
 
 	@Override

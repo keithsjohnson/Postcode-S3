@@ -1,8 +1,6 @@
 package uk.co.keithj.postcodes3.infrastructure.s3;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -10,15 +8,11 @@ import java.io.InputStreamReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.Upload;
-import com.amazonaws.util.IOUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import uk.co.keithj.postcodes3.api.StoreProvider;
 
@@ -26,30 +20,63 @@ import uk.co.keithj.postcodes3.api.StoreProvider;
 public class S3ProviderImpl implements StoreProvider {
 
 	@Autowired
-	private TransferManager s3TransferManager;
+	private AmazonS3 amazonS3;
 
 	@Autowired
-	private AmazonS3 amazonS3;
+	private S3FileChunkProcessorImpl s3FileChunkProcessorImpl;
+
+	@Autowired
+	private S3FileUploader s3FileUploader;
 
 	@Override
 	public void retrieve(String message) {
-		System.out.println("S3 RETREIVE: " + message);
+		System.out.println("S3 RETRIEVE: " + message);
 
-		S3Object s3object = amazonS3.getObject(new GetObjectRequest("postcodelocationfinderfiles", "postcodes.csv"));
+		S3FileInfo s3FileInfo = getS3FileInfoFromMessage(message);
+
+		getWholeFileFromS3(s3FileInfo);
+
+		s3FileChunkProcessorImpl.getFileFromS3InChunks(s3FileInfo);
+
+		amazonS3.deleteObject(s3FileInfo.getBucketName(), s3FileInfo.getObjectKey());
+	}
+
+	private S3FileInfo getS3FileInfoFromMessage(String message) {
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode messageJsonNode = null;
+		try {
+			messageJsonNode = mapper.readTree(message);
+		} catch (Exception e) {
+			throw new RuntimeException("error reading Json Tree ", e);
+		}
+
+		JsonNode recordsJsonNodeArray = messageJsonNode.findValue("Records");
+
+		S3FileInfo s3FileInfo = null;
+		if (recordsJsonNodeArray.isArray()) {
+			for (final JsonNode objNode : recordsJsonNodeArray) {
+				String s3BucketName = null;
+				String s3ObjectKey = null;
+				s3BucketName = objNode.path("s3").path("bucket").path("name").asText();
+				System.out.println(s3BucketName);
+				s3ObjectKey = objNode.path("s3").path("object").path("key").asText();
+				System.out.println(s3ObjectKey);
+				s3FileInfo = new S3FileInfo(s3BucketName, s3ObjectKey);
+			}
+		}
+		return s3FileInfo;
+	}
+
+	private void getWholeFileFromS3(S3FileInfo s3FileInfo) {
+		S3Object s3object = amazonS3
+				.getObject(new GetObjectRequest(s3FileInfo.getBucketName(), s3FileInfo.getObjectKey()));
 
 		System.out.println("Content-Type: " + s3object.getObjectMetadata().getContentType());
+
+		long instanceLength = s3object.getObjectMetadata().getInstanceLength();
+		System.out.println("InstanceLength: " + instanceLength);
 		displayTextInputStream(s3object.getObjectContent());
-
-		// Get a range of bytes from an object.
-
-		GetObjectRequest rangeObjectRequest = new GetObjectRequest("postcodelocationfinderfiles", "postcodes.csv");
-		rangeObjectRequest.setRange(0, 18);
-		S3Object objectPortion = amazonS3.getObject(rangeObjectRequest);
-
-		System.out.println("Printing bytes retrieved.");
-		displayTextInputStream(objectPortion.getObjectContent());
-
-		amazonS3.deleteObject("postcodelocationfinderfiles", "postcodes.csv");
+		return;
 	}
 
 	private static void displayTextInputStream(InputStream input) {
@@ -66,57 +93,33 @@ public class S3ProviderImpl implements StoreProvider {
 			if (line == null)
 				break;
 
-			System.out.println("    " + line);
+			System.out.println("    '" + line + "'");
 		}
 		System.out.println();
 	}
 
 	@Override
 	public void store(String key, String filename) {
-		PutObjectRequest putObjectRequest = getPutObjectRequest(key, filename);
-
-		long startTime = System.currentTimeMillis();
-		Upload upload = s3TransferManager.upload(putObjectRequest);
-
-		waitForUploadToComplete(upload);
-		System.out.println("After " + upload.getDescription() + ", State: " + upload.getState() + ", Duration: "
-				+ (System.currentTimeMillis() - startTime) + "ms.");
+		s3FileUploader.store(key, filename);
 	}
 
-	private PutObjectRequest getPutObjectRequest(String key, String filename) {
-		ObjectMetadata metadata = new ObjectMetadata();
-		metadata.setContentLength(getFileContentLength(filename));
+	class S3FileInfo {
 
-		PutObjectRequest putObjectRequest = null;
-		try {
-			putObjectRequest = new PutObjectRequest("postcodelocationfinderfiles", key, new FileInputStream(filename),
-					metadata);
-		} catch (FileNotFoundException e) {
-			throw new RuntimeException("File not found: " + filename, e);
+		private final String bucketName;
+		private final String objectKey;
+
+		public S3FileInfo(String bucketName, String objectKey) {
+			super();
+			this.bucketName = bucketName;
+			this.objectKey = objectKey;
 		}
-		return putObjectRequest;
-	}
 
-	private void waitForUploadToComplete(Upload upload) {
-		AmazonClientException amazonClientException = null;
-		try {
-			amazonClientException = upload.waitForException();
-		} catch (InterruptedException e1) {
-			throw new RuntimeException("Thread.sleep interruped: ", e1);
+		public String getBucketName() {
+			return bucketName;
 		}
-		if (amazonClientException != null) {
-			amazonClientException.printStackTrace();
-		}
-	}
 
-	private int getFileContentLength(String filename) {
-		try {
-			FileInputStream fileInputStream = new FileInputStream(filename);
-			byte[] contentBytes = IOUtils.toByteArray(fileInputStream);
-
-			return contentBytes.length;
-		} catch (Exception e) {
-			throw new RuntimeException("Cannot get information for file: " + filename, e);
+		public String getObjectKey() {
+			return objectKey;
 		}
 
 	}

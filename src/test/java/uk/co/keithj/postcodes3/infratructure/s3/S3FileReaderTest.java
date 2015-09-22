@@ -103,7 +103,7 @@ public class S3FileReaderTest {
 
 		// Then
 		// assertEquals("\rST7 2YB", remainingLine);
-		assertEquals("", remainingLine);
+		assertEquals("\r", remainingLine);
 	}
 
 	private String getCharacters(int startPosition, int chunkSize) {

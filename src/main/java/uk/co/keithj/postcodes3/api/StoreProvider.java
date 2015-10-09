@@ -4,5 +4,5 @@ public interface StoreProvider {
 
 	void retrieve(String message);
 
-	void store(String key, String filename);
+	void store(String bucket, String key, String filename);
 }

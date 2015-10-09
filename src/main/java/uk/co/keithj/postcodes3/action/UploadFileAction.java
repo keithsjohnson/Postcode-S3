@@ -14,9 +14,9 @@ public class UploadFileAction {
 	private StoreProvider storeProvider;
 
 	@RequestMapping(value = "/upload")
-	public @ResponseBody String upload(String key, String filename) {
+	public @ResponseBody String upload(String bucket, String key, String filename) {
 
-		storeProvider.store(key, filename);
+		storeProvider.store(bucket, key, filename);
 
 		return "OK";
 	}

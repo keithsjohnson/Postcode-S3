@@ -19,8 +19,8 @@ public class S3FileUploader {
 	@Autowired
 	private TransferManager s3TransferManager;
 
-	public void store(String key, String filename) {
-		PutObjectRequest putObjectRequest = getPutObjectRequest(key, filename);
+	public void store(String bucket, String key, String filename) {
+		PutObjectRequest putObjectRequest = getPutObjectRequest(bucket, key, filename);
 
 		long startTime = System.currentTimeMillis();
 		Upload upload = s3TransferManager.upload(putObjectRequest);
@@ -30,14 +30,13 @@ public class S3FileUploader {
 				+ (System.currentTimeMillis() - startTime) + "ms.");
 	}
 
-	private PutObjectRequest getPutObjectRequest(String key, String filename) {
+	private PutObjectRequest getPutObjectRequest(String bucket, String key, String filename) {
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentLength(getFileContentLength(filename));
 
 		PutObjectRequest putObjectRequest = null;
 		try {
-			putObjectRequest = new PutObjectRequest("postcodelocationfinderfiles", key, new FileInputStream(filename),
-					metadata);
+			putObjectRequest = new PutObjectRequest(bucket, key, new FileInputStream(filename), metadata);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("File not found: " + filename, e);
 		}

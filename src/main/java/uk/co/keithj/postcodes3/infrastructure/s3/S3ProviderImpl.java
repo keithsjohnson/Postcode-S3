@@ -59,8 +59,8 @@ public class S3ProviderImpl implements StoreProvider {
 	}
 
 	@Override
-	public void store(String key, String filename) {
-		s3FileUploader.store(key, filename);
+	public void store(String bucket, String key, String filename) {
+		s3FileUploader.store(bucket, key, filename);
 	}
 
 	class S3FileInfo {
